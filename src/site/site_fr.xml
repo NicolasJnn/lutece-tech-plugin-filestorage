@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+    <body>
+        <links>
+            <item name="EN" href="/index.html" />
+        </links>
+
+        <menu name="Plugin filestorage">
+            <item name="Accueil" href="index.html"/>
+        </menu>
+
+        <menu name="Téléchargements" inherit="bottom">
+            <item name="Versions publiées" href="../../stable_builds/plugins/plugin-filestorage/"/>
+            <item name="Versions de développement" href="../../nightly_builds/plugins/plugin-filestorage/" />
+        </menu>
+
+        <menu ref="reports" />
+    </body>
+</project>

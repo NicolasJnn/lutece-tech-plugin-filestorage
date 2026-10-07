@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+    <properties>
+        <title>Plugin filestorage</title>
+    </properties>
+    <body>
+        <section name="Plugin filestorage">
+            <subsection name="Introduction">
+                <p>This plugin lets a Lutece 8 site publish its own files without any manual deposit on its servers. Files are uploaded and managed from the back office, and their links are inserted into contents from the editor. The files themselves are kept by a file store service provider of the core, chosen by configuration : blobstore by default.</p>
+                <p>Main features :</p>
+                <ul>
+                    <li>upload of files from the back office, restricted by type and size</li>
+                    <li>management table : search by title, modification of the title and the description, replacement of the content, removal, copy of the link</li>
+                    <li>separate permissions to create, modify and remove files (RBAC)</li>
+                    <li>insertion of a link to a file into any content, through the insert services of the editor</li>
+                    <li>storage delegated to any file store service provider : blobstore by default, the database provider of the core, or another one</li>
+                </ul>
+            </subsection>
+            <subsection name="Back office">
+                <p>The feature <strong>File storage</strong> (right <code>FILESTORAGE_MANAGEMENT</code>, level 1) gives access to the management table.</p>
+                <p>The actions on the files are granted through the RBAC resource type <code>FILESTORAGE_FILE</code> and its permissions <code>CREATE</code>, <code>MODIFY</code> and <code>DELETE</code>. The role <code>filestorage_manager</code> grants all of them.</p>
+                <p>The insert service <strong>Stored file</strong> is offered by the insert service selector of the core. Using it requires the right <code>FILESTORAGE_INSERT</code> (level 3), in addition to the right of the core that opens the selector.</p>
+            </subsection>
+            <subsection name="Security">
+                <ul>
+                    <li>the type of an uploaded file is checked three times : its extension, its declared MIME type and the signature of its content</li>
+                    <li>the stored name of a file is cleaned, and its stored MIME type is the verified one</li>
+                    <li>every action is protected against cross-site request forgery</li>
+                    <li>files are served by the download servlets of the core, always as attachments, through encrypted links</li>
+                </ul>
+            </subsection>
+            <subsection name="Configuration">
+                <p>The properties are defined in <code>WEB-INF/conf/plugins/filestorage.properties</code>. Each of them can be overridden by an environment variable : the key in upper case, dots replaced by underscores (for example <code>FILESTORAGE_ALLOWEDTYPES</code>).</p>
+                <table>
+                    <tr><th>Property</th><th>Default</th><th>Description</th></tr>
+                    <tr><td><code>filestorage.fileStoreServiceProvider</code></td><td><code>blobstore.blobStoreFileService</code></td><td>name of the file store service provider that keeps the files</td></tr>
+                    <tr><td><code>filestorage.allowedTypes</code></td><td><code>pdf,jpeg,png</code></td><td>allowed types ; html is supported too, a type without a known signature is only checked on its extension</td></tr>
+                    <tr><td><code>filestorage.maxFileSize</code></td><td><code>15728640</code></td><td>maximum size, in bytes</td></tr>
+                    <tr><td><code>filestorage.storedFile.itemsPerPage</code></td><td><code>50</code></td><td>rows per page of the management table</td></tr>
+                </table>
+            </subsection>
+            <subsection name="Storage">
+                <p>By default the files are kept by the blobstore plugin (<code>blobstore.blobStoreFileService</code>), on disk under the directory <code>blobstore.file.system.path</code> (environment variable <code>BLOBSTORE_FILE_SYSTEM_PATH</code>, <code>/var/blobs/</code> by default). In a container, this directory must be a persistent volume, writable by the user running the application server, shared in read-write mode between replicas and included in the backups.</p>
+                <p>To keep the files elsewhere, set <code>filestorage.fileStoreServiceProvider</code> to the name of another file store service provider, for example <code>defaultDatabaseFileStoreProvider</code> to keep them in the database of the core. The plugin uses the links and the access control of that provider : the validity of the links is the one of its download service (<code>lutece.file.download.validity</code> for the download service of the core, 0 meaning no expiry).</p>
+            </subsection>
+            <subsection name="Installation">
+                <p>Add the dependency to the pom of the site :</p>
+                <source><![CDATA[<dependency>
+    <groupId>fr.paris.lutece.plugins</groupId>
+    <artifactId>plugin-filestorage</artifactId>
+    <type>lutece-plugin</type>
+</dependency>]]></source>
+                <p>The plugin depends on <code>plugin-blobstore</code>. The SQL scripts of the plugin create the table <code>filestorage_file</code>, the rights and the role. The site declares both plugins installed with the keys <code>core.plugins.status.filestorage.installed</code>, <code>core.plugins.status.filestorage.pool</code>, <code>core.plugins.status.blobstore.installed</code> and <code>core.plugins.status.blobstore.pool</code>.</p>
+            </subsection>
+            <subsection name="Limits">
+                <ul>
+                    <li>replacing the content of a file changes its link : the links already inserted in contents no longer work</li>
+                    <li>files are always downloaded, never displayed in the browser ; HTML pages are better managed with the htmlpage plugin</li>
+                    <li>no dedicated button in the editor : the insertion goes through the insert service selector of the core</li>
+                </ul>
+            </subsection>
+        </section>
+    </body>
+</document>

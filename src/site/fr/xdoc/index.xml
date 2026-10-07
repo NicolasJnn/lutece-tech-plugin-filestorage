@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+    <properties>
+        <title>Plugin filestorage</title>
+    </properties>
+    <body>
+        <section name="Plugin filestorage">
+            <subsection name="Introduction">
+                <p>Ce plugin permet à un site Lutece 8 de publier ses propres fichiers sans aucun dépôt manuel sur ses serveurs. Les fichiers sont téléversés et gérés depuis le back-office, et leur lien est inséré dans les contenus depuis l'éditeur. Les fichiers eux-mêmes sont conservés par un provider de stockage du socle, choisi par configuration : blobstore par défaut.</p>
+                <p>Principales fonctionnalités :</p>
+                <ul>
+                    <li>téléversement de fichiers depuis le back-office, avec restriction de type et de poids</li>
+                    <li>tableau de gestion : recherche par titre, modification du titre et de la description, remplacement du contenu, suppression, copie du lien</li>
+                    <li>permissions distinctes pour créer, modifier et supprimer les fichiers (RBAC)</li>
+                    <li>insertion du lien d'un fichier dans n'importe quel contenu, par les services d'insertion de l'éditeur</li>
+                    <li>stockage délégué à un provider de stockage : blobstore par défaut, le provider en base du socle, ou un autre</li>
+                </ul>
+            </subsection>
+            <subsection name="Back-office">
+                <p>La fonctionnalité <strong>Stockage de fichiers</strong> (droit <code>FILESTORAGE_MANAGEMENT</code>, niveau 1) donne accès au tableau de gestion.</p>
+                <p>Les actions sur les fichiers sont accordées par le type de ressource RBAC <code>FILESTORAGE_FILE</code> et ses permissions <code>CREATE</code>, <code>MODIFY</code> et <code>DELETE</code>. Le rôle <code>filestorage_manager</code> les accorde toutes.</p>
+                <p>Le service d'insertion <strong>Fichier stocké</strong> est proposé par le sélecteur d'insertion du socle. Son utilisation exige le droit <code>FILESTORAGE_INSERT</code> (niveau 3), en plus du droit du socle qui ouvre le sélecteur.</p>
+            </subsection>
+            <subsection name="Sécurité">
+                <ul>
+                    <li>le type d'un fichier téléversé est contrôlé trois fois : son extension, son type MIME déclaré et la signature de son contenu</li>
+                    <li>le nom stocké est nettoyé, et le type MIME stocké est le type vérifié</li>
+                    <li>chaque action est protégée contre la falsification de requêtes</li>
+                    <li>les fichiers sont servis par les servlets de téléchargement du socle, toujours en pièce jointe, par des liens chiffrés</li>
+                </ul>
+            </subsection>
+            <subsection name="Configuration">
+                <p>Les propriétés sont définies dans <code>WEB-INF/conf/plugins/filestorage.properties</code>. Chacune peut être surchargée par une variable d'environnement : la clé en majuscules, les points remplacés par des soulignés (par exemple <code>FILESTORAGE_ALLOWEDTYPES</code>).</p>
+                <table>
+                    <tr><th>Propriété</th><th>Défaut</th><th>Description</th></tr>
+                    <tr><td><code>filestorage.fileStoreServiceProvider</code></td><td><code>blobstore.blobStoreFileService</code></td><td>nom du provider de stockage qui conserve les fichiers</td></tr>
+                    <tr><td><code>filestorage.allowedTypes</code></td><td><code>pdf,jpeg,png</code></td><td>types autorisés ; html est également pris en charge, un type sans signature connue n'est contrôlé que sur son extension</td></tr>
+                    <tr><td><code>filestorage.maxFileSize</code></td><td><code>15728640</code></td><td>poids maximal, en octets</td></tr>
+                    <tr><td><code>filestorage.storedFile.itemsPerPage</code></td><td><code>50</code></td><td>lignes par page du tableau de gestion</td></tr>
+                </table>
+            </subsection>
+            <subsection name="Stockage">
+                <p>Par défaut, les fichiers sont conservés par le plugin blobstore (<code>blobstore.blobStoreFileService</code>), sur disque sous le répertoire <code>blobstore.file.system.path</code> (variable d'environnement <code>BLOBSTORE_FILE_SYSTEM_PATH</code>, <code>/var/blobs/</code> par défaut). En conteneur, ce répertoire doit être un volume persistant, inscriptible par l'utilisateur du serveur d'application, partagé en lecture-écriture entre réplicas et inclus dans les sauvegardes.</p>
+                <p>Pour conserver les fichiers ailleurs, renseigner <code>filestorage.fileStoreServiceProvider</code> avec le nom d'un autre provider de stockage, par exemple <code>defaultDatabaseFileStoreProvider</code> pour les conserver dans la base du socle. Le plugin utilise alors les liens et le contrôle d'accès de ce provider : la durée de validité des liens est celle de son service de téléchargement (<code>lutece.file.download.validity</code> pour celui du socle, 0 signifiant sans expiration).</p>
+            </subsection>
+            <subsection name="Installation">
+                <p>Ajouter la dépendance au pom du site :</p>
+                <source><![CDATA[<dependency>
+    <groupId>fr.paris.lutece.plugins</groupId>
+    <artifactId>plugin-filestorage</artifactId>
+    <type>lutece-plugin</type>
+</dependency>]]></source>
+                <p>Le plugin dépend de <code>plugin-blobstore</code>. Les scripts SQL du plugin créent la table <code>filestorage_file</code>, les droits et le rôle. Le site déclare les deux plugins installés avec les clés <code>core.plugins.status.filestorage.installed</code>, <code>core.plugins.status.filestorage.pool</code>, <code>core.plugins.status.blobstore.installed</code> et <code>core.plugins.status.blobstore.pool</code>.</p>
+            </subsection>
+            <subsection name="Limites">
+                <ul>
+                    <li>remplacer le contenu d'un fichier change son lien : les liens déjà insérés dans les contenus ne fonctionnent plus</li>
+                    <li>les fichiers sont toujours téléchargés, jamais affichés dans le navigateur ; les pages HTML relèvent plutôt du plugin htmlpage</li>
+                    <li>pas de bouton dédié dans l'éditeur : l'insertion passe par le sélecteur d'insertion du socle</li>
+                </ul>
+            </subsection>
+        </section>
+    </body>
+</document>
