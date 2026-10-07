@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+    <properties>
+        <title>Plugin filestorage</title>
+    </properties>
+    <body>
+        <section name="Plugin filestorage">
+            <subsection name="Introduction">
+                <p>This plugin lets a Lutece 8 site publish its own files without any manual deposit on its servers. Files are uploaded and managed from the back office, kept on a persistent volume, and their links are inserted into contents from the editor.</p>
+                <p>Main features :</p>
+                <ul>
+                    <li>upload of files from the back office, restricted by type and size</li>
+                    <li>management table : search by title, modification of the title and the description, replacement of the content, removal</li>
+                    <li>separate permissions to create, modify and remove files (RBAC)</li>
+                    <li>insertion of a link to a file into any content, through the insert services of the editor</li>
+                    <li>non predictable links that never expire</li>
+                    <li>PDF, images and HTML pages displayed in the browser, the HTML pages in a sandbox where no script runs</li>
+                    <li>storage on disk by default, or in the database, chosen by configuration</li>
+                </ul>
+            </subsection>
+            <subsection name="Back office">
+                <p>The feature <strong>File storage</strong> (right <code>FILESTORAGE_MANAGEMENT</code>, level 1) gives access to the management table.</p>
+                <p>The actions on the files are granted through the RBAC resource type <code>FILESTORAGE_FILE</code> and its permissions <code>CREATE</code>, <code>MODIFY</code> and <code>DELETE</code>. The role <code>filestorage_manager</code> grants all of them.</p>
+                <p>The insert service <strong>Stored file</strong> is offered by the insert service selector of the core. Using it requires the right <code>FILESTORAGE_INSERT</code> (level 3), in addition to the right of the core that opens the selector.</p>
+            </subsection>
+            <subsection name="Security">
+                <ul>
+                    <li>the type of an uploaded file is checked three times : its extension, its declared MIME type and the signature of its content</li>
+                    <li>every action is protected against cross-site request forgery</li>
+                    <li>files are served with <code>X-Content-Type-Options: nosniff</code>, a <code>Content-Security-Policy</code> that forbids any framing by another site, and the security headers of the site</li>
+                    <li>every file but the PDF is served in a sandbox : an HTML page cannot run scripts nor reach the session of the site</li>
+                    <li>the servlet only serves the files of this plugin</li>
+                </ul>
+            </subsection>
+            <subsection name="Configuration">
+                <p>The properties are defined in <code>WEB-INF/conf/plugins/filestorage.properties</code>. Each of them can be overridden by an environment variable : the key in upper case, dots replaced by underscores (for example <code>FILESTORAGE_FILESYSTEM_DIRECTORY</code>).</p>
+                <table>
+                    <tr><th>Property</th><th>Default</th><th>Description</th></tr>
+                    <tr><td><code>filestorage.allowedTypes</code></td><td><code>pdf,html,jpeg,png</code></td><td>allowed types ; a type without a known signature is only checked on its extension and is always downloaded</td></tr>
+                    <tr><td><code>filestorage.maxFileSize</code></td><td><code>15728640</code></td><td>maximum size, in bytes</td></tr>
+                    <tr><td><code>filestorage.fileStoreServiceProvider.fileStoreService</code></td><td><code>filestorage.fileSystemFileService</code></td><td>storage : on disk, or <code>localDatabaseFileService</code> for the database</td></tr>
+                    <tr><td><code>filestorage.fileSystem.directory</code></td><td><code>/opt/data/filestorage</code></td><td>directory of the disk storage ; it must exist, be absolute and writable</td></tr>
+                    <tr><td><code>filestorage.fileStoreServiceProvider.downloadService</code></td><td><code>filestorage.fileDownloadService</code></td><td>service building the links</td></tr>
+                    <tr><td><code>filestorage.fileStoreServiceProvider.rbacService</code></td><td><code>defaultFileNoRBACService</code></td><td>access control when a file is opened ; none by default, files are public</td></tr>
+                    <tr><td><code>filestorage.storedFile.itemsPerPage</code></td><td><code>50</code></td><td>rows per page of the management table</td></tr>
+                    <tr><td><code>filestorage.cacheMaxAge</code></td><td><code>3600</code></td><td>browser cache duration of a file, in seconds</td></tr>
+                    <tr><td><code>filestorage.cleanup.minAge</code></td><td><code>3600</code></td><td>minimum age of an orphan file before its removal, in seconds</td></tr>
+                    <tr><td><code>daemon.filestorageCleanup.interval</code></td><td><code>3600</code></td><td>interval of the cleaning daemon, in seconds</td></tr>
+                    <tr><td><code>daemon.filestorageCleanup.onstartup</code></td><td><code>1</code></td><td>run the cleaning daemon at startup</td></tr>
+                </table>
+            </subsection>
+            <subsection name="Disk storage">
+                <p>Each file is kept as <code>&lt;directory&gt;/&lt;first two characters of its key&gt;/&lt;key&gt;</code>, next to <code>&lt;key&gt;.properties</code> that holds its title, MIME type, size, owner and date. Keys are random UUIDs, files are created with the mode <code>0640</code>.</p>
+                <p>The plugin never creates the root directory : when the volume is missing or cannot be written, the upload is refused and the error is logged at startup.</p>
+                <p>The daemon <strong>File storage - cleaning of the disk store</strong> removes the files left behind by interrupted uploads and deletions, and the files no longer referenced by the catalogue. It does nothing when the catalogue cannot be read.</p>
+                <p>In a container, the directory must be a persistent volume, writable by the user running the application server, shared in read-write mode between replicas and included in the backups.</p>
+            </subsection>
+            <subsection name="Installation">
+                <p>Add the dependency to the pom of the site :</p>
+                <source><![CDATA[<dependency>
+    <groupId>fr.paris.lutece.plugins</groupId>
+    <artifactId>plugin-filestorage</artifactId>
+    <type>lutece-plugin</type>
+</dependency>]]></source>
+                <p>The SQL scripts of the plugin create the table <code>filestorage_file</code>, the rights and the role. The site declares the plugin installed with the keys <code>core.plugins.status.filestorage.installed</code> and <code>core.plugins.status.filestorage.pool</code>.</p>
+            </subsection>
+            <subsection name="Limits">
+                <ul>
+                    <li>replacing the content of a file changes its link : the links already inserted in contents no longer work</li>
+                    <li>an HTML page is displayed alone : its relative resources (style sheets, images) are not served</li>
+                    <li>no dedicated button in the editor : the insertion goes through the insert service selector of the core</li>
+                </ul>
+            </subsection>
+        </section>
+    </body>
+</document>

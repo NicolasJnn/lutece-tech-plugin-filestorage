@@ -1,0 +1,98 @@
+<@pageContainer>
+    <@pageColumn>
+        <@pageHeader title='#i18n{filestorage.manage_storedfiles.title}' />
+        <@messages errors=errors infos=infos />
+        <@row class='justify-content-end align-items-center g-2 mb-3'>
+            <#if paginator.itemsCount gt 1 || search?has_content>
+                <@columns class='col-md-auto'>
+                    <@tform type='inline' method='get' action='jsp/admin/plugins/filestorage/ManageStoredFiles.jsp'>
+                        <@input type='hidden' name='view' value='manageStoredFiles' />
+                        <@inputGroup>
+                            <@input type='text' name='search' id='search' value=search?html placeHolder='#i18n{filestorage.manage_storedfiles.labelSearch}' params='addons aria-label="#i18n{filestorage.manage_storedfiles.labelSearch}"' />
+                            <@button type='submit' buttonIcon='search' title='#i18n{filestorage.manage_storedfiles.buttonSearch}' hideTitle=['all'] />
+                            <#if search?has_content>
+                                <@aButton href='jsp/admin/plugins/filestorage/ManageStoredFiles.jsp?view=manageStoredFiles&amp;search=' buttonIcon='x' title='#i18n{portal.util.labelReset}' hideTitle=['all'] color='secondary' />
+                            </#if>
+                        </@inputGroup>
+                    </@tform>
+                </@columns>
+            </#if>
+            <#if can_create>
+                <@columns class='col-md-auto'>
+                    <@aButton href='jsp/admin/plugins/filestorage/ManageStoredFiles.jsp?view=createStoredFile' buttonIcon='plus' title='#i18n{filestorage.manage_storedfiles.buttonAdd}' color='primary' />
+                </@columns>
+            </#if>
+        </@row>
+        <#if storedfile_list?has_content>
+            <@div class='card bg-transparent border-0 shadow-none mb-0 d-none d-md-block' id='storedfile-list-header'>
+                <@div class='card-body py-0'>
+                    <@row class='g-3'>
+                        <@div class='col-md'>
+                            <@row class='g-3'>
+                                <@div class='col-md-3 fw-bold'>#i18n{filestorage.manage_storedfiles.columnTitle}</@div>
+                                <@div class='col-md-3 fw-bold'>#i18n{filestorage.manage_storedfiles.columnType}</@div>
+                                <@div class='col-md-2 fw-bold'>#i18n{filestorage.manage_storedfiles.columnSize}</@div>
+                                <@div class='col-md-2 fw-bold'>#i18n{filestorage.manage_storedfiles.columnDate}</@div>
+                                <@div class='col-md-2 fw-bold'>#i18n{filestorage.manage_storedfiles.columnCreator}</@div>
+                            </@row>
+                        </@div>
+                        <@div class='col-md-auto' params='style="min-width: 16rem"'></@div>
+                    </@row>
+                </@div>
+            </@div>
+            <@manageFeature id='storedfile-list'>
+                <#list storedfile_list as item>
+                <@manageFeatureItem>
+                    <@manageFeatureItemColumn flex=false>
+                        <@row class='gx-3 gy-2 gy-md-3'>
+                            <@div class='col-md-3 text-break'>
+                                <strong>${item.storedFile.title?html}</strong>
+                                <#if item.storedFile.description?has_content><@p class='my-1'><small>${item.storedFile.description?html}</small></@p></#if>
+                            </@div>
+                            <@div class='col-md-3 d-flex d-md-block'>
+                                <@span class='fw-bold d-md-none flex-shrink-0' params='style="width: 7.5rem"'>#i18n{filestorage.manage_storedfiles.columnType}</@span>
+                                <@span class='text-break'>${item.storedFile.mimeType?html}</@span>
+                            </@div>
+                            <@div class='col-md-2 d-flex d-md-block'>
+                                <@span class='fw-bold d-md-none flex-shrink-0' params='style="width: 7.5rem"'>#i18n{filestorage.manage_storedfiles.columnSize}</@span>
+                                <@span class='d-inline'>${(item.storedFile.fileSize / 1024)?ceiling?c} #i18n{filestorage.manage_storedfiles.unitKilobyte}</@span>
+                            </@div>
+                            <@div class='col-md-2 d-flex d-md-block'>
+                                <@span class='fw-bold d-md-none flex-shrink-0' params='style="width: 7.5rem"'>#i18n{filestorage.manage_storedfiles.columnDate}</@span>
+                                <@span class='d-inline'><#if item.storedFile.dateCreation??><@span class='text-nowrap'>${item.storedFile.dateCreation?string('dd/MM/yyyy')}</@span> <@span class='text-nowrap'>${item.storedFile.dateCreation?string('HH:mm')}</@span></#if></@span>
+                            </@div>
+                            <@div class='col-md-2 d-flex d-md-block'>
+                                <@span class='fw-bold d-md-none flex-shrink-0' params='style="width: 7.5rem"'>#i18n{filestorage.manage_storedfiles.columnCreator}</@span>
+                                <@span class='text-break'>${item.storedFile.creator?html}</@span>
+                            </@div>
+                        </@row>
+                    </@manageFeatureItemColumn>
+                    <@manageFeatureItemColumn align='end' class='col-md-auto' params='style="min-width: 16rem"'>
+                        <@span class='storedfile-public-url d-none'>${item.publicUrl}</@span>
+                        <@button type='button' buttonIcon='copy' title='#i18n{filestorage.manage_storedfiles.buttonCopyLink}' hideTitle=['all'] color='default' class='me-1' params='onclick="this.previousElementSibling.click();"' />
+                        <@aButton href='${item.downloadUrl}' target='_blank' params='rel="noopener"' buttonIcon='external-link' title='#i18n{filestorage.manage_storedfiles.buttonOpen}' hideTitle=['all'] color='default' class='me-1' />
+                        <#if item.modifiable>
+                            <@aButton href='jsp/admin/plugins/filestorage/ManageStoredFiles.jsp?view=modifyStoredFile&amp;id_file=${item.storedFile.idFile?c}' buttonIcon='edit' title='#i18n{portal.util.labelModify}' hideTitle=['all'] color='primary' class='me-1' />
+                        </#if>
+                        <#if item.removable>
+                            <@aButton href='jsp/admin/plugins/filestorage/ManageStoredFiles.jsp?view=confirmRemoveStoredFile&amp;id_file=${item.storedFile.idFile?c}' buttonIcon='trash' title='#i18n{portal.util.labelDelete}' hideTitle=['all'] color='danger' />
+                        </#if>
+                    </@manageFeatureItemColumn>
+                </@manageFeatureItem>
+                </#list>
+            </@manageFeature>
+            <#if paginator.itemsCount gte 10>
+                <@paginationAdmin paginator=paginator combo=1 />
+            </#if>
+        <#else>
+            <@card>
+                <#if can_create && !search?has_content>
+                    <@empty title='#i18n{filestorage.manage_storedfiles.noData}' iconName='file-off' actionTitle='#i18n{filestorage.manage_storedfiles.buttonAdd}' actionUrl='jsp/admin/plugins/filestorage/ManageStoredFiles.jsp?view=createStoredFile' />
+                <#else>
+                    <@empty title='#i18n{filestorage.manage_storedfiles.noData}' iconName='file-off' />
+                </#if>
+            </@card>
+        </#if>
+    </@pageColumn>
+</@pageContainer>
+<@copyElementToClipboard selector='.storedfile-public-url' btn=false />

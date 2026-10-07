@@ -1,0 +1,55 @@
+<@div class='insert-service'>
+    <@h level=2>#i18n{filestorage.insert_selector.title}</@h>
+    <#if !authorized>
+        <@messages warnings=['#i18n{filestorage.message.error.insertUnauthorized}'] />
+    <#else>
+        <@tform type='inline' method='get' action='jsp/admin/insert/DisplayInsertService.jsp'>
+            <@input type='hidden' name='insert_service_type' value='FILESTORAGE_INSERT_SERVICE' />
+            <@input type='hidden' name='input' value=input_name?html />
+            <@input type='hidden' name='selected_text' value=selected_text?html />
+            <@formGroup labelKey='#i18n{filestorage.insert_selector.labelSearch}' labelFor='search'>
+                <@inputGroup>
+                    <@input type='text' name='search' id='search' value=search?html params='addons' />
+                    <@button type='submit' buttonIcon='search' title='#i18n{filestorage.manage_storedfiles.buttonSearch}' />
+                </@inputGroup>
+            </@formGroup>
+        </@tform>
+        <@tform method='post' action='jsp/admin/plugins/filestorage/DoInsertStoredFileLink.jsp'>
+            <@input type='hidden' name='input' value=input_name?html />
+            <@formGroup labelKey='#i18n{portal.insert.labelLinkText}' labelFor='text' mandatory=true>
+                <@input type='text' name='text' id='text' value=selected_text?html maxlength=50 />
+            </@formGroup>
+            <@formGroup labelKey='#i18n{portal.insert.labelLinkTitle}' labelFor='title' mandatory=true>
+                <@input type='text' name='title' id='title' value='' maxlength=50 />
+            </@formGroup>
+            <@formGroup labelKey='#i18n{portal.insert.labelLinkTarget}' labelFor='target'>
+                <@select name='target' id='target'>
+                    <@option value='_self' label='#i18n{portal.insert.labelTargetSelf}' />
+                    <@option value='_blank' label='#i18n{portal.insert.labelTargetBlank}' />
+                </@select>
+            </@formGroup>
+            <#if storedfile_list?has_content>
+                <@p class='fw-bold'>#i18n{filestorage.insert_selector.labelSelectFile}</@p>
+                <@manageFeature id='storedfile-selection'>
+                    <#list storedfile_list as storedfile>
+                    <@manageFeatureItem>
+                        <@manageFeatureItemColumn auto=true flex=false>
+                            <@radioButton labelKey='${storedfile.title?html}' name='id_file' id='id_file_${storedfile.idFile?c}' value='${storedfile.idFile?c}' />
+                            <#if storedfile.description?has_content><@p class='my-1'><small>${storedfile.description?html}</small></@p></#if>
+                        </@manageFeatureItemColumn>
+                        <@manageFeatureItemColumn align='end'>
+                            <@tag color='secondary'>${storedfile.mimeType?html}</@tag>
+                        </@manageFeatureItemColumn>
+                    </@manageFeatureItem>
+                    </#list>
+                </@manageFeature>
+            <#else>
+                <@empty title='#i18n{filestorage.manage_storedfiles.noData}' iconName='file-off' />
+            </#if>
+            <@formGroup>
+                <@button type='submit' buttonIcon='check' title='#i18n{filestorage.insert_selector.buttonInsert}' />
+                <@button type='button' params='onclick="javascript:history.go(-1);"' title='#i18n{portal.admin.message.buttonCancel}' color='default' buttonIcon='times' />
+            </@formGroup>
+        </@tform>
+    </#if>
+</@div>

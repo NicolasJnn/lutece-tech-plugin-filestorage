@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+    <properties>
+        <title>Plugin filestorage</title>
+    </properties>
+    <body>
+        <section name="Plugin filestorage">
+            <subsection name="Introduction">
+                <p>Ce plugin permet à un site Lutece 8 de publier ses propres fichiers sans aucun dépôt manuel sur ses serveurs. Les fichiers sont téléversés et gérés depuis le back-office, conservés sur un volume persistant, et leur lien est inséré dans les contenus depuis l'éditeur.</p>
+                <p>Principales fonctionnalités :</p>
+                <ul>
+                    <li>téléversement de fichiers depuis le back-office, avec restriction de type et de poids</li>
+                    <li>tableau de gestion : recherche par titre, modification du titre et de la description, remplacement du contenu, suppression</li>
+                    <li>permissions distinctes pour créer, modifier et supprimer les fichiers (RBAC)</li>
+                    <li>insertion du lien d'un fichier dans n'importe quel contenu, par les services d'insertion de l'éditeur</li>
+                    <li>liens non prédictibles et sans expiration</li>
+                    <li>PDF, images et pages HTML affichés dans le navigateur, les pages HTML dans un bac à sable où aucun script ne s'exécute</li>
+                    <li>stockage sur disque par défaut, ou en base de données, au choix par configuration</li>
+                </ul>
+            </subsection>
+            <subsection name="Back-office">
+                <p>La fonctionnalité <strong>Stockage de fichiers</strong> (droit <code>FILESTORAGE_MANAGEMENT</code>, niveau 1) donne accès au tableau de gestion.</p>
+                <p>Les actions sur les fichiers sont accordées par le type de ressource RBAC <code>FILESTORAGE_FILE</code> et ses permissions <code>CREATE</code>, <code>MODIFY</code> et <code>DELETE</code>. Le rôle <code>filestorage_manager</code> les accorde toutes.</p>
+                <p>Le service d'insertion <strong>Fichier stocké</strong> est proposé par le sélecteur d'insertion du socle. Son utilisation exige le droit <code>FILESTORAGE_INSERT</code> (niveau 3), en plus du droit du socle qui ouvre le sélecteur.</p>
+            </subsection>
+            <subsection name="Sécurité">
+                <ul>
+                    <li>le type d'un fichier téléversé est contrôlé trois fois : son extension, son type MIME déclaré et la signature de son contenu</li>
+                    <li>chaque action est protégée contre la falsification de requêtes</li>
+                    <li>les fichiers sont servis avec <code>X-Content-Type-Options: nosniff</code>, une <code>Content-Security-Policy</code> qui interdit tout encadrement par un autre site, et les en-têtes de sécurité du site</li>
+                    <li>tout fichier sauf le PDF est servi dans un bac à sable : une page HTML ne peut ni exécuter de script ni accéder à la session du site</li>
+                    <li>la servlet ne sert que les fichiers de ce plugin</li>
+                </ul>
+            </subsection>
+            <subsection name="Configuration">
+                <p>Les propriétés sont définies dans <code>WEB-INF/conf/plugins/filestorage.properties</code>. Chacune peut être surchargée par une variable d'environnement : la clé en majuscules, les points remplacés par des soulignés (par exemple <code>FILESTORAGE_FILESYSTEM_DIRECTORY</code>).</p>
+                <table>
+                    <tr><th>Propriété</th><th>Défaut</th><th>Description</th></tr>
+                    <tr><td><code>filestorage.allowedTypes</code></td><td><code>pdf,html,jpeg,png</code></td><td>types autorisés ; un type sans signature connue n'est contrôlé que sur son extension et est toujours téléchargé</td></tr>
+                    <tr><td><code>filestorage.maxFileSize</code></td><td><code>15728640</code></td><td>poids maximal, en octets</td></tr>
+                    <tr><td><code>filestorage.fileStoreServiceProvider.fileStoreService</code></td><td><code>filestorage.fileSystemFileService</code></td><td>stockage : sur disque, ou <code>localDatabaseFileService</code> pour la base de données</td></tr>
+                    <tr><td><code>filestorage.fileSystem.directory</code></td><td><code>/opt/data/filestorage</code></td><td>répertoire du stockage disque ; il doit exister, être absolu et inscriptible</td></tr>
+                    <tr><td><code>filestorage.fileStoreServiceProvider.downloadService</code></td><td><code>filestorage.fileDownloadService</code></td><td>service qui construit les liens</td></tr>
+                    <tr><td><code>filestorage.fileStoreServiceProvider.rbacService</code></td><td><code>defaultFileNoRBACService</code></td><td>contrôle d'accès à l'ouverture d'un fichier ; aucun par défaut, les fichiers sont publics</td></tr>
+                    <tr><td><code>filestorage.storedFile.itemsPerPage</code></td><td><code>50</code></td><td>lignes par page du tableau de gestion</td></tr>
+                    <tr><td><code>filestorage.cacheMaxAge</code></td><td><code>3600</code></td><td>durée de cache d'un fichier dans le navigateur, en secondes</td></tr>
+                    <tr><td><code>filestorage.cleanup.minAge</code></td><td><code>3600</code></td><td>âge minimal d'un fichier orphelin avant sa suppression, en secondes</td></tr>
+                    <tr><td><code>daemon.filestorageCleanup.interval</code></td><td><code>3600</code></td><td>fréquence du démon de nettoyage, en secondes</td></tr>
+                    <tr><td><code>daemon.filestorageCleanup.onstartup</code></td><td><code>1</code></td><td>lancer le démon de nettoyage au démarrage</td></tr>
+                </table>
+            </subsection>
+            <subsection name="Stockage sur disque">
+                <p>Chaque fichier est conservé sous <code>&lt;répertoire&gt;/&lt;2 premiers caractères de sa clé&gt;/&lt;clé&gt;</code>, à côté de <code>&lt;clé&gt;.properties</code> qui contient son titre, son type MIME, sa taille, son propriétaire et sa date. Les clés sont des UUID aléatoires, les fichiers sont créés en mode <code>0640</code>.</p>
+                <p>Le plugin ne crée jamais le répertoire racine : si le volume est absent ou non inscriptible, le téléversement est refusé et l'erreur est journalisée au démarrage.</p>
+                <p>Le démon <strong>Stockage de fichiers - nettoyage du stockage disque</strong> supprime les fichiers laissés par des téléversements ou des suppressions interrompus, et les fichiers qui ne sont plus référencés par le catalogue. Il ne fait rien si le catalogue est illisible.</p>
+                <p>En conteneur, le répertoire doit être un volume persistant, inscriptible par l'utilisateur du serveur d'application, partagé en lecture-écriture entre réplicas et inclus dans les sauvegardes.</p>
+            </subsection>
+            <subsection name="Installation">
+                <p>Ajouter la dépendance au pom du site :</p>
+                <source><![CDATA[<dependency>
+    <groupId>fr.paris.lutece.plugins</groupId>
+    <artifactId>plugin-filestorage</artifactId>
+    <type>lutece-plugin</type>
+</dependency>]]></source>
+                <p>Les scripts SQL du plugin créent la table <code>filestorage_file</code>, les droits et le rôle. Le site déclare le plugin installé avec les clés <code>core.plugins.status.filestorage.installed</code> et <code>core.plugins.status.filestorage.pool</code>.</p>
+            </subsection>
+            <subsection name="Limites">
+                <ul>
+                    <li>remplacer le contenu d'un fichier change son lien : les liens déjà insérés dans les contenus ne fonctionnent plus</li>
+                    <li>une page HTML s'affiche seule : ses ressources relatives (feuilles de style, images) ne sont pas servies</li>
+                    <li>pas de bouton dédié dans l'éditeur : l'insertion passe par le sélecteur d'insertion du socle</li>
+                </ul>
+            </subsection>
+        </section>
+    </body>
+</document>

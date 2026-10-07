@@ -1,0 +1,22 @@
+<@pageContainer>
+    <@pageColumn>
+        <@pageHeader title='#i18n{filestorage.create_storedfile.title}' />
+        <@messages errors=errors />
+        <@tform method='post' name='create_storedfile' id='create_storedfile' action='jsp/admin/plugins/filestorage/ManageStoredFiles.jsp' enctype='multipart/form-data' boxed=true>
+            <@input type='hidden' name='token' value='${token}' />
+            <@formGroup labelFor='stored_file' labelKey='#i18n{filestorage.create_storedfile.labelFile}' helpKey='#i18n{filestorage.storedfile.help.maxSize} ${max_file_size_mb?html} #i18n{filestorage.storedfile.help.megabytes} - #i18n{filestorage.storedfile.help.allowedTypes} ${allowed_types?html}' mandatory=true>
+                <@input type='file' name='stored_file' id='stored_file' />
+            </@formGroup>
+            <@formGroup labelFor='title' labelKey='#i18n{filestorage.storedfile.labelTitle}' helpKey='#i18n{filestorage.create_storedfile.help.title}'>
+                <@input type='text' name='title' id='title' maxlength=max_title_length />
+            </@formGroup>
+            <@formGroup labelFor='description' labelKey='#i18n{filestorage.storedfile.labelDescription}'>
+                <@input type='textarea' name='description' id='description' maxlength=max_description_length rows=3 />
+            </@formGroup>
+            <@formGroup>
+                <@button type='submit' name='action_createStoredFile' buttonIcon='check' title='#i18n{portal.admin.message.buttonValidate}' />
+                <@aButton href='jsp/admin/plugins/filestorage/ManageStoredFiles.jsp' buttonIcon='times' title='#i18n{portal.admin.message.buttonCancel}' color='default' />
+            </@formGroup>
+        </@tform>
+    </@pageColumn>
+</@pageContainer>

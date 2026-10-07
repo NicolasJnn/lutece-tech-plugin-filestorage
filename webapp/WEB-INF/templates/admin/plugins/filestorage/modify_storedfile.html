@@ -1,0 +1,26 @@
+<@pageContainer>
+    <@pageColumn>
+        <@pageHeader title='#i18n{filestorage.modify_storedfile.title}' />
+        <@messages errors=errors />
+        <@tform method='post' name='modify_storedfile' id='modify_storedfile' action='jsp/admin/plugins/filestorage/ManageStoredFiles.jsp' enctype='multipart/form-data' boxed=true>
+            <@input type='hidden' name='token' value='${token}' />
+            <@input type='hidden' name='id_file' value='${storedfile.idFile?c}' />
+            <@formGroup labelFor='title' labelKey='#i18n{filestorage.storedfile.labelTitle}' mandatory=true>
+                <@input type='text' name='title' id='title' value=storedfile.title?html maxlength=max_title_length />
+            </@formGroup>
+            <@formGroup labelFor='description' labelKey='#i18n{filestorage.storedfile.labelDescription}'>
+                <@input type='textarea' name='description' id='description' maxlength=max_description_length rows=3>${storedfile.description?html}</@input>
+            </@formGroup>
+            <@formGroup labelKey='#i18n{filestorage.modify_storedfile.labelCurrentFile}'>
+                <@aButton href='${download_url}' target='_blank' params='rel="noopener"' buttonIcon='external-link' title='${storedfile.mimeType?html}' color='default' />
+            </@formGroup>
+            <@formGroup labelFor='stored_file' labelKey='#i18n{filestorage.modify_storedfile.labelReplaceFile}' helpKey='#i18n{filestorage.storedfile.help.maxSize} ${max_file_size_mb?html} #i18n{filestorage.storedfile.help.megabytes} - #i18n{filestorage.storedfile.help.allowedTypes} ${allowed_types?html}. #i18n{filestorage.modify_storedfile.help.replaceFile}'>
+                <@input type='file' name='stored_file' id='stored_file' />
+            </@formGroup>
+            <@formGroup>
+                <@button type='submit' name='action_modifyStoredFile' buttonIcon='check' title='#i18n{portal.admin.message.buttonValidate}' />
+                <@aButton href='jsp/admin/plugins/filestorage/ManageStoredFiles.jsp' buttonIcon='times' title='#i18n{portal.admin.message.buttonCancel}' color='default' />
+            </@formGroup>
+        </@tform>
+    </@pageColumn>
+</@pageContainer>
